@@ -1,0 +1,194 @@
+#include<iostream>
+using namespace std;
+#include<vector>
+
+template<class T>
+struct Triple//定义一个三元组，用来存储稀疏矩阵的x,y,坐标值
+{
+	int _row;
+	int _col;
+	T _value;
+
+	Triple()
+		:_row(0)
+		, _col(0)
+		, value(0)
+	{}
+
+	Triple(int row, int col, int value)
+		:_row(row)
+		, _col(col)
+		, _value(value)
+	{}
+};
+
+
+
+template<class T>
+class SparseMatrix
+{
+public:
+	SparseMatrix()
+	{}
+
+	SparseMatrix(T* a, int m, int n, const T& invalid)
+		
+	{
+		for (int i = 0; i < m; i++)
+		{
+			for (int j = 0; j < n; j++)
+			{
+				if (invalid != a[i*n+j])
+				{
+					Triple <T> tmp(i, j, a[i*n + j]);
+					
+					_a.push_back(tmp);					
+				}
+				
+			}
+		}	
+	}
+
+
+	//用坐标形式打印稀疏矩阵
+	void Display(int m, int n, const T& invalid)
+	{
+		cout << "用坐标形式打印稀疏矩阵" << endl;
+		cout <<"{" <<"x," << "  " << "y," << "  " << "value" <<"}" <<endl;
+		for (int k = 0; k < _a.size(); k++)
+		{
+			cout << "{" << _a[k]._row << ",  " << _a[k]._col << ",  " << _a[k]._value << "  " << "}" << endl;
+		}								
+	}
+
+	//用矩阵形式打印稀疏矩阵
+	void DisplayMatrix(int m, int n, const T& invalid)
+	{		
+		cout << "用矩阵形式打印稀疏矩阵" << endl;
+		int k = 0;
+		for (int i = 0; i < m; i++)
+		{
+			for (int j = 0; j < n; j++)
+			{		
+				
+				if (k<_a.size()&&_a[k]._row == i && _a[k]._col == j)
+				{
+					cout << _a[k]._value << "  ";
+					k++;
+				}
+				else
+				{
+					cout << invalid << "  ";
+				}								
+			}
+			cout << endl;
+		}
+	}
+
+	//矩阵转置
+	/*SparseMatrix<T> Transport(T* a, int m, int n, const T& invalid)
+	{
+		cout << "矩阵转置：" << endl;
+		int b[5][6]; 
+		for (int i = 0; i < m; i++)
+		{
+			for (int j = 0; j < n; j++)
+			{
+				b[j][i] = a[i*n + j];
+			}		
+		}
+		
+		SparseMatrix<T> TranMatrix((int*)b, 5, 6, 0);
+		return TranMatrix;
+	}*/
+
+
+	SparseMatrix<T> Transport(T* a, int m, int n, const T& invalid)
+	{
+		int i = 0;
+		int j = 0;
+		SparseMatrix<T> ret;
+		for (i = 0; i < n; i++)
+		{
+			for (j = 0; j < _a.size(); j++)
+			{
+				if (i == _a[j]._col)
+				{
+					Triple<T> tri(_a[j]._col, _a[j]._row, _a[j]._value);
+					ret._a.push_back(tri);
+				}
+			}
+		}
+		return ret;
+	}
+	
+	//快速转置
+	SparseMatrix<T> FastTransport(int m, int n, const T& invalid)
+	{
+		SparseMatrix<T> ret;
+		ret._a.resize(_a.size());
+		
+		vector<int> RowCounts;
+		RowCounts.resize(n);
+		RowCounts.assign(n, 0);
+		for (int i = 0; i < _a.size(); i++)
+		{
+			RowCounts[_a[i]._col]++;
+		}
+		
+		vector<int> RowStarts;
+		RowStarts.resize(n);
+		RowStarts.assign(n, 0);
+		for (int j = 0; j < n-1; j++)
+		{
+			RowStarts[j + 1] = RowStarts[j] + RowCounts[j];
+		}
+
+		for (int k = 0; i < _a.size(); k++)
+		{
+			ret._a[RowStarts[_a[k]._col]]._col = _a[k]._row;
+			ret._a[RowStarts[_a[k]._col]]._row = _a[k]._col;
+			ret._a[RowStarts[_a[k]._col]++]._value = _a[k]._value;
+
+		}
+		return ret;
+	}
+
+protected:
+	vector <Triple <T>> _a;
+	
+};
+
+
+
+void Test()
+{
+
+	int a[6][5] = {
+					{ 1, 0, 3, 0, 5 },
+					{ 0, 0, 0, 0, 0 },
+					{ 0, 0, 0, 0, 0 },
+					{ 2, 0, 4, 0, 6 },
+					{ 0, 0, 0, 0, 0 },
+					{ 0, 0, 0, 0, 0 },
+				  }; 
+
+	int m = 6;
+	int n = 5;
+	SparseMatrix<int> sm((int*)a, m, n, 0);
+	sm.Display( m, n, 0);
+	sm.DisplayMatrix( m, n, 0);
+
+	SparseMatrix<int> sm1((int*)a, m, n, 0);
+	sm1 = sm.FastTransport( m, n, 0);
+	
+	sm1.Display( n, m, 0);
+	sm1.DisplayMatrix(n, m, 0);
+}
+
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
